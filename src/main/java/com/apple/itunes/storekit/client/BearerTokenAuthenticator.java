@@ -13,8 +13,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class BearerTokenAuthenticator {
     private static final String APP_STORE_CONNECT_AUDIENCE = "appstoreconnect-v1";
@@ -25,11 +25,14 @@ public class BearerTokenAuthenticator {
     private final String issuerId;
     private final String bundleId;
 
-    public BearerTokenAuthenticator(String signingKey, String keyId, String issuerId, String bundleId) {
+    public BearerTokenAuthenticator(
+            String signingKey, String keyId, String issuerId, String bundleId) {
         try {
-            signingKey = signingKey.replace("-----BEGIN PRIVATE KEY-----", "")
-                    .replaceAll("\\R+", "")
-                    .replace("-----END PRIVATE KEY-----", "");
+            signingKey =
+                    signingKey
+                            .replace("-----BEGIN PRIVATE KEY-----", "")
+                            .replaceAll("\\R+", "")
+                            .replace("-----END PRIVATE KEY-----", "");
 
             byte[] derEncodedSigningKey = Base64.getDecoder().decode(signingKey);
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
@@ -46,12 +49,14 @@ public class BearerTokenAuthenticator {
     }
 
     public String generateToken() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put(BUNDLE_ID_KEY, bundleId);
         return JWT.create()
                 .withAudience(APP_STORE_CONNECT_AUDIENCE)
                 .withExpiresAt(Instant.now().plus(ChronoUnit.MINUTES.getDuration().multipliedBy(5)))
                 .withIssuer(issuerId)
                 .withKeyId(keyId)
-                .withPayload(Map.of(BUNDLE_ID_KEY, bundleId))
+                .withPayload(payload)
                 .sign(Algorithm.ECDSA256(signingKey));
     }
 }

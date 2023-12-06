@@ -5,21 +5,8 @@ package com.apple.itunes.storekit.verification;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.security.PublicKey;
-import java.security.cert.CertPath;
-import java.security.cert.CertPathValidator;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.PKIXCertPathValidatorResult;
-import java.security.cert.PKIXParameters;
-import java.security.cert.PKIXRevocationChecker;
-import java.security.cert.TrustAnchor;
-import java.security.cert.X509Certificate;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.security.cert.*;
+import java.util.*;
 
 public class ChainVerifier {
     private static final int EXPECTED_CHAIN_LENGTH = 3;
@@ -44,7 +31,9 @@ public class ChainVerifier {
         }
     }
 
-    public PublicKey verifyChain(String[] certificates, boolean performRevocationChecking, Date effectiveDate) throws VerificationException {
+    public PublicKey verifyChain(
+            String[] certificates, boolean performRevocationChecking, Date effectiveDate)
+            throws VerificationException {
         CertificateFactory certificateFactory;
         CertPathValidator certPathValidator;
         try {
@@ -56,7 +45,8 @@ public class ChainVerifier {
         List<Certificate> parsedCertificates = new LinkedList<>();
         try {
             for (String c : certificates) {
-                InputStream derEncodedCert = new ByteArrayInputStream(Base64.getDecoder().decode(c));
+                InputStream derEncodedCert =
+                        new ByteArrayInputStream(Base64.getDecoder().decode(c));
                 parsedCertificates.add(certificateFactory.generateCertificate(derEncodedCert));
             }
         } catch (Exception e) {
@@ -68,18 +58,24 @@ public class ChainVerifier {
         }
 
         try {
-            //We don't include the root cert in the path, due to OCSP not being supported
-            CertPath certPath = certificateFactory.generateCertPath(parsedCertificates.subList(0, EXPECTED_CHAIN_LENGTH - 1));
+            // We don't include the root cert in the path, due to OCSP not being supported
+            CertPath certPath =
+                    certificateFactory.generateCertPath(
+                            parsedCertificates.subList(0, EXPECTED_CHAIN_LENGTH - 1));
             PKIXParameters parameters = new PKIXParameters(trustAnchors);
             parameters.setRevocationEnabled(performRevocationChecking);
             parameters.setDate(effectiveDate);
             if (performRevocationChecking) {
-                PKIXRevocationChecker revocationChecker = (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
-                revocationChecker.setOptions(Set.of(PKIXRevocationChecker.Option.NO_FALLBACK));
+                PKIXRevocationChecker revocationChecker =
+                        (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
+                Set<PKIXRevocationChecker.Option> options = new HashSet();
+                options.add(PKIXRevocationChecker.Option.NO_FALLBACK);
+                revocationChecker.setOptions(options);
                 parameters.addCertPathChecker(revocationChecker);
             }
             parameters.addCertPathChecker(new AppleExtensionCertPathChecker());
-            PKIXCertPathValidatorResult certPathValidatorResult = (PKIXCertPathValidatorResult) certPathValidator.validate(certPath, parameters);
+            PKIXCertPathValidatorResult certPathValidatorResult =
+                    (PKIXCertPathValidatorResult) certPathValidator.validate(certPath, parameters);
             return certPathValidatorResult.getPublicKey();
         } catch (Exception e) {
             throw new VerificationException(Status.INVALID_CHAIN, e);

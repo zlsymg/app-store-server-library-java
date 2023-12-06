@@ -1,9 +1,11 @@
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
+apply plugin: 'signing'
 
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
@@ -27,12 +29,12 @@ javadoc {
     source = sourceSets.main.allJava
 }
 
-signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications
-}
+//signing {
+//    def signingKey = findProperty("signingKey")
+//    def signingPassword = findProperty("signingPassword")
+//    useInMemoryPgpKeys(signingKey, signingPassword)
+//    sign publishing.publications
+//}
 
 publishing {
     publications {
@@ -72,7 +74,7 @@ publishing {
                 username findProperty("mavenUsername")
                 password findProperty("mavenPassword")
             }
-            if(project.version.endsWith('-SNAPSHOT')) {
+            if (project.version.endsWith('-SNAPSHOT')) {
                 url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             } else {
                 url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
